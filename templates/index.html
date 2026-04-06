@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>News Sentiment Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+.container {
+    width: 90%;
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 { text-align: center; }
+
+form {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+input {
+    padding: 12px;
+    width: 60%;
+    border-radius: 8px 0 0 8px;
+    border: none;
+}
+
+button {
+    padding: 12px;
+    background: #00c9a7;
+    border: none;
+    color: white;
+    border-radius: 0 8px 8px 0;
+}
+
+.card {
+    background: rgba(255,255,255,0.05);
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 10px;
+}
+
+.positive { color: #00ffab; }
+.negative { color: #ff4d4d; }
+.neutral { color: #ffd369; }
+
+.chart-container {
+    margin: 30px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>📰 News Sentiment Analyzer</h1>
+
+    <form method="POST">
+        <input type="text" name="topic" placeholder="Enter topic..." value="{{ topic }}">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if results %}
+    <div class="chart-container">
+        <canvas id="sentimentChart"></canvas>
+    </div>
+    {% endif %}
+
+    {% for article in results %}
+    <div class="card">
+        <h3>{{ article.title }}</h3>
+        <p>Source: {{ article.source }} | Score: {{ article.score }}</p>
+
+        <p class="{% if article.sentiment == 'Positive' %}positive
+                   {% elif article.sentiment == 'Negative' %}negative
+                   {% else %}neutral{% endif %}">
+            {{ article.sentiment }}
+        </p>
+
+        <a href="{{ article.url }}" target="_blank">Read more →</a>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+const positive = {{ positive | default(0) }};
+const negative = {{ negative | default(0) }};
+const neutral = {{ neutral | default(0) }};
+
+if (positive + negative + neutral > 0) {
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Positive', 'Negative', 'Neutral'],
+            datasets: [{
+                data: [positive, negative, neutral]
+            }]
+        }
+    });
+}
+</script>
+
+</body>
+</html>
