@@ -20,5 +20,5 @@ This project leverages Natural Language Processing (NLP) to help users quickly g
 ## 📦 Installation & Setup
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/your-username/nlp-news-sentiment.git](https://github.com/your-username/nlp-news-sentiment.git)
+   git clone [https://github.com/suryanshyadav2023-tech/nlp-news-sentiment.git](https://github.com/your-username/nlp-news-sentiment.git)
    cd nlp-news-sentiment
