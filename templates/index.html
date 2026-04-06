@@ -1,97 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>News Sentiment Analyzer</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP News Sentiment Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
-
 <body>
-
-<div class="container">
-
-    <h1>📰 News Sentiment Analyzer</h1>
-    <p class="subtitle">Analyze the mood of global headlines</p>
-
-    <!-- Search -->
-    <form method="POST" id="searchForm">
-        <input type="text" name="topic" placeholder="Search news topic..." value="{{ topic }}">
-        <button type="submit">Analyze</button>
-    </form>
-
-    <!-- Stats -->
-    {% if results %}
-
-    <div class="stats">
-        <div class="stat">Positive: {{ positive }}</div>
-        <div class="stat">Negative: {{ negative }}</div>
-        <div class="stat">Neutral: {{ neutral }}</div>
-    </div>
-
-    <div class="main">
-
-        <!-- LEFT SIDE: RESULTS -->
-        <div class="results">
-            {% for article in results %}
-            <div class="news-card">
-                <h3>{{ article.title }}</h3>
-                <p class="meta">{{ article.source }} | Score: {{ article.score }}</p>
-
-                <span class="tag 
-                    {% if article.sentiment == 'Positive' %}pos
-                    {% elif article.sentiment == 'Negative' %}neg
-                    {% else %}neu{% endif %}">
-                    {{ article.sentiment }}
-                </span>
-
-                <br>
-                <a href="{{ article.url }}" target="_blank">Read →</a>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- RIGHT SIDE: CHART -->
-        <div class="side">
-            <div class="chart-box">
-                <canvas id="sentimentChart"></canvas>
+    <header>
+        <div class="header-container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">📰</div>
+                    <div>
+                        <h1>NLP Sentiment Analysis</h1>
+                        <p class="header-subtitle">Real-time news sentiment detection</p>
+                    </div>
+                </div>
             </div>
         </div>
+    </header>
 
+    <div class="container">
+        <!-- Search Section -->
+        <section class="search-section">
+            <h2>Search News Articles</h2>
+            <p>Enter a topic to analyze sentiment in news articles</p>
+            <form method="POST" class="search-form" id="searchForm">
+                <input 
+                    type="text" 
+                    name="topic" 
+                    class="search-input" 
+                    id="topicInput"
+                    placeholder="e.g., Technology, Tesla, Climate Change..." 
+                    value="{{ topic }}"
+                    required
+                >
+                <button type="submit" class="search-btn" id="searchBtn">Search & Analyze</button>
+            </form>
+        </section>
+
+        <!-- Stats Section -->
+        {% if results %}
+        <section class="stats-section" id="statsSection">
+            <div class="stat-card">
+                <div class="stat-label">Positive</div>
+                <div class="stat-number" id="positiveCount">{{ positive }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Neutral</div>
+                <div class="stat-number" id="neutralCount">{{ neutral }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Negative</div>
+                <div class="stat-number" id="negativeCount">{{ negative }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Analyzed</div>
+                <div class="stat-number" id="totalCount">{{ results|length }}</div>
+            </div>
+        </section>
+
+        <!-- Chart Section -->
+        <section class="chart-section" id="chartSection">
+            <div class="chart-container">
+                <h3>Sentiment Distribution</h3>
+                <div class="chart-wrapper">
+                    <canvas id="sentimentChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Sentiment by Source</h3>
+                <div class="chart-wrapper">
+                    <canvas id="sourceChart"></canvas>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Results Section -->
+        {% if results %}
+        <section class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>Analysis Results</h2>
+                <p>Showing sentiment analysis for "<strong id="searchTopic">{{ topic }}</strong>"</p>
+            </div>
+            <div class="results-grid" id="resultsGrid">
+                {% for article in results %}
+                <article class="news-card {{ article.sentiment|lower }}" data-article-index="{{ loop.index0 }}">
+                    <div class="card-header">
+                        <h3 class="news-title">{{ article.title }}</h3>
+                        <div style="display: flex; gap: 8px; flex-direction: column;">
+                            <span class="sentiment-badge {{ article.sentiment|lower }}">{{ article.sentiment }}</span>
+                            <span class="sentiment-score">Score: {{ article.score }}</span>
+                        </div>
+                    </div>
+                    <div class="card-meta">
+                        <div class="meta-left">
+                            <span class="source-badge">{{ article.source }}</span>
+                            <span class="date-badge">📅 {{ article.publishedAt }}</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="analyze-btn" data-title="{{ article.title }}" data-sentiment="{{ article.sentiment }}" data-score="{{ article.score }}" data-analysis='{{ article.detailed_analysis | tojson }}'>
+                                🔍 Analyze
+                            </button>
+                            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="read-btn">Read Full Article →</a>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            <!-- Load More Button -->
+            <div class="load-more-container" id="loadMoreContainer" style="display:none;">
+                <button class="load-more-btn" id="loadMoreBtn">
+                    <span id="loadMoreText">Load More Articles</span>
+                </button>
+                <p class="load-more-info" id="loadMoreInfo"></p>
+            </div>
+        </section>
+        {% elif topic %}
+        <section class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3 class="empty-title">No Results Found</h3>
+            <p class="empty-text">Try searching with different keywords</p>
+        </section>
+        {% else %}
+        <section class="empty-state" id="emptyState">
+            <div class="empty-icon">🔍</div>
+            <h3 class="empty-title">Start Analyzing</h3>
+            <p class="empty-text">Search for a topic above to analyze news sentiment</p>
+        </section>
+        {% endif %}
     </div>
 
-    {% endif %}
+    <footer>
+        <p>&copy; 2024 NLP News Sentiment Analysis. Powered by NewsAPI & TextBlob</p>
+    </footer>
 
-    <!-- Results -->
-    <div class="results">
-        {% for article in results %}
-        <div class="news-card">
-            <h3>{{ article.title }}</h3>
-            <p class="meta">{{ article.source }} | Score: {{ article.score }}</p>
+    <!-- Analysis Modal -->
+    <div id="analysisModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            
+            <div class="modal-header">
+                <h2>Detailed Sentiment Analysis</h2>
+                <div class="modal-sentiment-badge" id="modalSentimentBadge"></div>
+            </div>
 
-            <span class="tag 
-                {% if article.sentiment == 'Positive' %}pos
-                {% elif article.sentiment == 'Negative' %}neg
-                {% else %}neu{% endif %}">
-                {{ article.sentiment }}
-            </span>
+            <div class="modal-body">
+                <div class="analysis-section">
+                    <h3>Article Title & Description</h3>
+                    <p id="modalTitle" class="modal-title-text"></p>
+                </div>
 
-            <a href="{{ article.url }}" target="_blank">Read →</a>
+                <div class="analysis-section">
+                    <h3>Sentiment Score Details</h3>
+                    <div class="score-details">
+                        <div class="score-item">
+                            <span class="score-label">Polarity Score:</span>
+                            <span class="score-value" id="modalScore"></span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">Classification:</span>
+                            <span class="score-value" id="modalClassification"></span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">Subjectivity:</span>
+                            <span class="score-value" id="modalSubjectivity"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h3>📊 Sentiment Keywords Analysis</h3>
+                    <p class="section-subtitle">These are the words that led to the sentiment classification:</p>
+                    
+                    <div class="keywords-container">
+                        <div class="keywords-box positive-words">
+                            <h4>✅ Positive Keywords (<span id="positiveWordCount">0</span>)</h4>
+                            <div class="keywords-list" id="positiveKeywordsList">
+                                <!-- Positive keywords will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="keywords-box negative-words">
+                            <h4>❌ Negative Keywords (<span id="negativeWordCount">0</span>)</h4>
+                            <div class="keywords-list" id="negativeKeywordsList">
+                                <!-- Negative keywords will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h3>🔢 How the Score Was Calculated</h3>
+                    <div class="calculation-box">
+                        <p id="calculationExplanation" class="calculation-text"></p>
+                        <div class="calculation-formula">
+                            <div class="formula-step">
+                                <span class="step-number">1</span>
+                                <span class="step-text">All sentiment words are identified (positive and negative)</span>
+                            </div>
+                            <div class="formula-step">
+                                <span class="step-number">2</span>
+                                <span class="step-text">Each word is assigned a polarity score (-1 to +1)</span>
+                            </div>
+                            <div class="formula-step">
+                                <span class="step-number">3</span>
+                                <span class="step-text">All scores are averaged together</span>
+                            </div>
+                            <div class="formula-step">
+                                <span class="step-number">4</span>
+                                <span class="step-text">Result is compared to thresholds (>0.1 = positive, <-0.1 = negative)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h3>📈 Analysis Metrics</h3>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <span class="metric-label">Total Sentiment Words:</span>
+                            <span class="metric-value" id="totalSentimentWords">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Positive Words:</span>
+                            <span class="metric-value positive" id="positiveWordMetric">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Negative Words:</span>
+                            <span class="metric-value negative" id="negativeWordMetric">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Word Balance:</span>
+                            <span class="metric-value" id="wordBalance">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h3>💡 What This Means</h3>
+                    <div class="explanation-box">
+                        <p id="sentimentExplanation"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <a id="modalReadLink" href="#" target="_blank" rel="noopener noreferrer" class="modal-btn-primary">Read Full Article</a>
+                <button class="modal-btn-secondary modal-close-btn">Close</button>
+            </div>
         </div>
-        {% endfor %}
     </div>
 
-</div>
-
-<script>
-const positive = {{ positive | default(0) }};
-const negative = {{ negative | default(0) }};
-const neutral = {{ neutral | default(0) }};
-</script>
-
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
