@@ -6,14 +6,19 @@ if (positive + negative + neutral > 0) {
         data: {
             labels: ['Positive', 'Negative', 'Neutral'],
             datasets: [{
-                data: [positive, negative, neutral]
+                data: [positive, negative, neutral],
+                backgroundColor: [
+                    '#3fb950', // green
+                    '#f85149', // red
+                    '#d29922'  // yellow
+                ]
             }]
         },
         options: {
             plugins: {
                 legend: {
                     labels: {
-                        color: 'white'
+                        color: '#e6edf3'
                     }
                 }
             }
