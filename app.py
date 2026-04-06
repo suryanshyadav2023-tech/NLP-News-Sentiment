@@ -1,83 +1,45 @@
-import streamlit as st
+from flask import Flask, render_template, request
 import requests
 from textblob import TextBlob
-import pandas as pd
 
-# 1. Page Configuration
-st.set_page_config(page_title="NLP News Sentiment Tracker", layout="wide", page_icon="📰")
+app = Flask(__name__)
 
-# 2. Sidebar for User Interaction
-st.sidebar.header("🔍 Search Parameters")
-topic = st.sidebar.text_input("Enter Topic (e.g., Bitcoin, AI, India)", "Technology")
-page_size = st.sidebar.slider("Number of Articles", 5, 20, 10)
-
-# Your Private API Key
+# Your NewsAPI Key
 API_KEY = 'e498d5588bbd436dad8f27d92f985723'
 
-st.title("🤖 NLP News Sentiment & Source Analyzer")
-st.markdown(f"Currently analyzing live trends for: **{topic}**")
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    news_results = []
+    search_topic = ""
+    
+    if request.method == 'POST':
+        search_topic = request.form.get('topic')
+        if search_topic:
+            # 1. Fetch News
+            url = f'https://newsapi.org/v2/everything?q={search_topic}&apiKey={API_KEY}&pageSize=10'
+            response = requests.get(url).json()
+            articles = response.get('articles', [])
 
-# 3. Main Logic
-if st.sidebar.button('Run Analysis'):
-    with st.spinner('Fetching live news and running NLP models...'):
-        # Fetching Data from NewsAPI
-        url = f'https://newsapi.org/v2/everything?q={topic}&apiKey={API_KEY}&pageSize={page_size}'
-        response = requests.get(url).json()
-        articles = response.get('articles', [])
-
-        if articles:
-            processed_data = []
+            # 2. NLP Processing
             for art in articles:
-                # TextBlob Sentiment Analysis
-                text_to_analyze = art['title']
-                analysis = TextBlob(text_to_analyze)
-                polarity = analysis.sentiment.polarity
+                text = art['title']
+                blob = TextBlob(text)
+                score = blob.sentiment.polarity
                 
-                # Categorization Logic
-                if polarity > 0.1:
-                    sentiment = "Positive"
-                elif polarity < -0.1:
-                    sentiment = "Negative"
-                else:
-                    sentiment = "Neutral"
+                # Classification
+                if score > 0.1: sentiment = "Positive"
+                elif score < -0.1: sentiment = "Negative"
+                else: sentiment = "Neutral"
 
-                processed_data.append({
-                    "Source": art['source']['name'],
-                    "Headline": text_to_analyze,
-                    "Sentiment": sentiment,
-                    "Polarity": round(polarity, 2),
-                    "Article Link": art['url'] # Metadata for traceability
+                news_results.append({
+                    'title': text,
+                    'source': art['source']['name'],
+                    'url': art['url'],
+                    'sentiment': sentiment,
+                    'score': round(score, 2)
                 })
 
-            # Convert to DataFrame
-            df = pd.DataFrame(processed_data)
+    return render_template('index.html', results=news_results, topic=search_topic)
 
-            # 4. Display Results in Two Columns
-            col1, col2 = st.columns([2, 1])
-
-            with col1:
-                st.subheader("📊 Sentiment Data Table")
-                # Making the URL clickable using column_config
-                st.dataframe(
-                    df,
-                    column_config={
-                        "Article Link": st.column_config.LinkColumn("View Source")
-                    },
-                    hide_index=True,
-                    use_container_width=True
-                )
-
-            with col2:
-                st.subheader("📈 Sentiment Distribution")
-                sentiment_counts = df['Sentiment'].value_counts()
-                st.bar_chart(sentiment_counts)
-                
-                st.subheader("📝 Summary Statistics")
-                st.write(f"**Total Articles:** {len(df)}")
-                st.write(f"**Avg Polarity:** {df['Polarity'].mean():.2f}")
-
-        else:
-            st.error("No news found. Try a broader keyword or check your API limit.")
-
-else:
-    st.info("Click 'Run Analysis' in the sidebar to start fetching data.")
+if __name__ == '__main__':
+    app.run(debug=True)
