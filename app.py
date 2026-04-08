@@ -50,6 +50,8 @@ def analyze_sentiment_detailed(text):
         'subjectivity': round(blob.sentiment.subjectivity, 2)
     }
 
+#flask app routes
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     news_results = []
