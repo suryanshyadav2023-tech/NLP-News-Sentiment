@@ -16,17 +16,14 @@ def analyze_sentiment_detailed(text):
     blob = TextBlob(text)
     polarity = blob.sentiment.polarity
     
-    # Get sentences
     sentences = blob.sentences
     word_sentiments = []
     
-    # Analyze each word for sentiment
     for word in blob.words:
         word_lower = word.lower()
         word_blob = TextBlob(word_lower)
         word_polarity = word_blob.sentiment.polarity
         
-        # Only include words with sentiment (non-neutral)
         if word_polarity != 0:
             word_sentiments.append({
                 'word': word_lower,
@@ -34,10 +31,8 @@ def analyze_sentiment_detailed(text):
                 'type': 'positive' if word_polarity > 0 else 'negative'
             })
     
-    # Sort by absolute polarity value (strongest sentiments first)
     word_sentiments.sort(key=lambda x: abs(x['polarity']), reverse=True)
     
-    # Count positive and negative words
     positive_words = [w for w in word_sentiments if w['type'] == 'positive']
     negative_words = [w for w in word_sentiments if w['type'] == 'negative']
     
@@ -74,12 +69,10 @@ def index():
                 description = art.get('description', '')
                 content = art.get('content', '')
                 
-                # Combine title and description for better analysis
                 full_text = f"{title}. {description}".strip()
                 if description == '':
                     full_text = title
                 
-                # Get the published date
                 published_at = art.get('publishedAt', '')
                 if published_at:
                     try:
@@ -90,11 +83,9 @@ def index():
                 else:
                     formatted_date = "Unknown"
 
-                # Analyze sentiment
                 blob = TextBlob(title)
                 score = blob.sentiment.polarity
                 
-                # Perform detailed analysis
                 detailed_analysis = analyze_sentiment_detailed(full_text)
 
                 if score > 0.1:
@@ -196,7 +187,7 @@ def load_more():
         })
 
     total_results = response.get('totalResults', 0)
-    has_more = (page * 10) < min(total_results, 100)  # NewsAPI free tier caps at 100
+    has_more = (page * 10) < min(total_results, 100)  
 
     return jsonify({'articles': results, 'has_more': has_more, 'page': page})
 
